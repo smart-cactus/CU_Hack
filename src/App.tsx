@@ -66,7 +66,7 @@ function App() {
   const [fieldStaffRequested, setFieldStaffRequested] = useState(false)
   const [lostItem, setLostItem] = useState<LostItem>('Телефон или документы')
   const [selectedSafeStop, setSelectedSafeStop] = useState(safeStopOptions[0])
-  const [feedback, setFeedback] = useState<'clear' | 'unclear' | null>(null)
+  const [feedback, setFeedback] = useState<'great' | null>(null)
 
   const reset = () => {
     setPanel(null)
@@ -110,7 +110,7 @@ function App() {
         {screen === 'waiting' && (
           <ScreenFrame step="Машина едет к вам" className="waiting-screen" onHelp={() => setPanel('help')}>
             <div className="trip-card"><div><p className="card-label">ПОДАЧА</p><h2>ул. Большая Дмитровка, 1</h2></div><div className="eta">{vehicle.eta}</div></div>
-            <div className="route-illustration" aria-hidden="true"><span className="map-dot dot-start"></span><span className="route-line"></span><span className="car-icon">▰</span><span className="map-dot dot-end"></span></div>
+            <RouteMap className="waiting-map" />
             <div className="info-panel"><p className="eyebrow">КАК ВЫ УЗНАЕТЕ АВТО</p><h2>{vehicle.colour} {vehicle.model}</h2><p>На крыше загорится синяя полоса. Не нужно искать водителя.</p></div>
             <button className="button button-primary" onClick={() => setScreen('arrival')}>Машина приехала</button>
             <button className="delivery-help-button" onClick={() => setPanel('deliveryHelp')}><span aria-hidden="true">?</span><strong>Нужна помощь?</strong><b aria-hidden="true">→</b></button>
@@ -194,9 +194,9 @@ function App() {
 
         {screen === 'trip' && (
           <ScreenFrame step="Вы в пути" className="trip-screen" onHelp={() => setPanel('help')}>
-            <div className="trip-map route-illustration" aria-hidden="true"><span className="map-dot dot-start"></span><span className="route-line"></span><span className="car-icon">▰</span><span className="map-dot dot-end"></span>
+            <RouteMap className="trip-map">
               <div className="map-event"><span>{currentEvent.icon}</span><div><b>{currentEvent.label}</b><small>Машина держит ситуацию под контролем</small></div></div>
-            </div>
+            </RouteMap>
             <section className="ride-control-panel" aria-live="polite">
               <div className="trip-summary"><div><p className="card-label">В ПУТИ ДО</p><strong>{destination}</strong></div><span>12 мин</span></div>
               <div className="route-points"><div><i></i><span>Текущая позиция</span><small>09:42</small></div><div><i></i><span>{destination}</span><small>09:53</small></div></div>
@@ -363,7 +363,7 @@ function App() {
 
         {panel === 'feedback' && (
           <BottomSheet title={feedback ? 'Спасибо за ответ' : 'Как прошла поездка?'} onClose={() => { setFeedback(null); setPanel(null) }}>
-            {feedback ? <><div className="confirmation-icon" aria-hidden="true">✓</div><p className="sheet-lead">{feedback === 'clear' ? 'Отлично — рады, что действия машины были понятными.' : 'Спасибо. Это поможет сделать объяснения машины спокойнее и понятнее.'}</p><button className="button button-primary sheet-button" onClick={reset}>Завершить</button></> : <><p className="sheet-lead">Был ли момент, когда было непонятно, что делает машина?</p><button className="plan-option feedback-option" onClick={() => setFeedback('clear')}><span>✓</span><div><strong>Нет, всё было понятно</strong><small>Спасибо, что доверили нам поездку</small></div></button><button className="plan-option feedback-option" onClick={() => setFeedback('unclear')}><span>?</span><div><strong>Да, был непонятный момент</strong><small>Учтём это в следующих объяснениях</small></div></button></>}
+            {feedback ? <><div className="confirmation-icon" aria-hidden="true">✓</div><p className="sheet-lead">Спасибо, что выбрали CU Taxi. Будем рады видеть вас снова.</p><button className="button button-primary sheet-button" onClick={reset}>Завершить</button></> : <><button className="plan-option feedback-option" onClick={() => setFeedback('great')}><span>✓</span><div><strong>Всё прошло отлично</strong><small>Спасибо, что выбрали CU Taxi</small></div></button><button className="plan-option feedback-option" onClick={() => setPanel('operator')}><span>◉</span><div><strong>Нужна помощь с поездкой</strong><small>Оператор увидит детали рейса и поможет</small></div></button></>}
           </BottomSheet>
         )}
 
@@ -400,6 +400,23 @@ function BottomSheet({ children, title, onClose }: { children: ReactNode; title:
 
 function TrustItem({ icon, text }: { icon: string; text: string }) {
   return <div className="trust-item"><span>{icon}</span><p>{text}</p></div>
+}
+
+function RouteMap({ children, className = '' }: { children?: ReactNode; className?: string }) {
+  return <div className={`route-illustration ${className}`}>
+    <svg className="route-map-art" viewBox="0 0 390 220" preserveAspectRatio="none" aria-hidden="true">
+      <rect width="390" height="220" className="map-ground" />
+      <rect x="18" y="18" width="88" height="45" rx="8" className="map-block" /><rect x="133" y="13" width="89" height="57" rx="8" className="map-block" /><rect x="260" y="24" width="91" height="60" rx="8" className="map-block" />
+      <rect x="35" y="99" width="104" height="53" rx="8" className="map-block" /><rect x="166" y="109" width="93" height="58" rx="8" className="map-block" /><rect x="285" y="112" width="68" height="60" rx="8" className="map-block" />
+      <rect x="35" y="181" width="92" height="31" rx="8" className="map-block" /><rect x="160" y="178" width="74" height="34" rx="8" className="map-block" /><rect x="260" y="179" width="102" height="33" rx="8" className="map-block" />
+      <path d="M-20 71 C70 52 135 60 205 78 S320 96 420 73" className="map-road" /><path d="M50 -20 C58 41 68 86 92 126 S120 177 124 244" className="map-road" /><path d="M215 -20 C202 43 198 81 210 113 S224 168 205 244" className="map-road" /><path d="M330 -20 C316 48 303 88 309 119 S334 170 335 244" className="map-road" />
+      <path d="M0 154 H390" className="map-road-small" /><path d="M0 191 H390" className="map-road-small" />
+      <path d="M66 198 C95 180 108 161 128 142 S157 120 196 107 S260 97 286 71 S282 47 250 37" className="map-route-underlay" />
+      <path d="M66 198 C95 180 108 161 128 142 S157 120 176 113" className="map-route map-route-green" /><path d="M176 113 C205 102 260 97 286 71" className="map-route map-route-amber" /><path d="M286 71 C301 56 297 44 282 37" className="map-route map-route-red" /><path d="M282 37 C270 32 260 31 250 37" className="map-route map-route-green" />
+    </svg>
+    <span className="map-dot dot-start" aria-hidden="true"></span><span className="car-icon" aria-hidden="true">➤</span><span className="map-dot dot-end" aria-hidden="true"></span>
+    {children}
+  </div>
 }
 
 function RussianPlate() {
