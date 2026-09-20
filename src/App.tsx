@@ -3,9 +3,15 @@ import { useState, type ReactNode } from 'react'
 type Screen = 'home' | 'waiting' | 'delayed' | 'notArrived' | 'offline' | 'arrival' | 'wrongCode' | 'doorOpen' | 'inside' | 'trip' | 'complete'
 type DriveEvent = 'stop' | 'detour' | 'offRoute' | 'waiting'
 type CabinIssue = 'unwell' | 'door' | 'object'
-type Panel = 'trust' | 'help' | 'voice' | 'operator' | 'fieldStaff' | 'explanations' | 'plans' | 'routeChanged' | 'safeStop' | 'cabin' | 'incidentResult'
+type LostItem = 'Телефон или документы' | 'Сумка или рюкзак' | 'Другая вещь'
+type Panel = 'trust' | 'help' | 'deliveryHelp' | 'lostItem' | 'lostItemSent' | 'voice' | 'operator' | 'fieldStaff' | 'explanations' | 'plans' | 'routeChanged' | 'safeStop' | 'safeStopConfirmed' | 'doorReopened' | 'cabin' | 'incidentResult'
 
-const vehicle = { model: 'CU Shuttle', plate: '826 ТК 77', colour: 'Белый', eta: '3 мин' }
+const vehicle = { model: 'Hyundai Sonata', plate: 'А 328 МР', region: '116', colour: 'Белый', eta: '3 мин' }
+const safeStopOptions = [
+  { name: 'Страстной бульвар, 4', details: '120 м · 2 мин', note: 'Разрешённая зона высадки' },
+  { name: 'Пушкинская площадь', details: '260 м · 4 мин', note: 'У входа в метро' },
+  { name: 'Тверской бульвар, 14', details: '340 м · 5 мин', note: 'Удобно для выхода с багажом' },
+]
 
 const driveEvents: Record<DriveEvent, { icon: string; label: string; title: string; text: string; reassurance: string }> = {
   stop: {
@@ -58,6 +64,8 @@ function App() {
   const [voiceActive, setVoiceActive] = useState(false)
   const [operatorConnected, setOperatorConnected] = useState(false)
   const [fieldStaffRequested, setFieldStaffRequested] = useState(false)
+  const [lostItem, setLostItem] = useState<LostItem>('Телефон или документы')
+  const [selectedSafeStop, setSelectedSafeStop] = useState(safeStopOptions[0])
 
   const reset = () => {
     setPanel(null)
@@ -68,6 +76,8 @@ function App() {
     setVoiceActive(false)
     setOperatorConnected(false)
     setFieldStaffRequested(false)
+    setLostItem('Телефон или документы')
+    setSelectedSafeStop(safeStopOptions[0])
   }
   const chooseEvent = (event: DriveEvent) => { setDriveEvent(event); setPanel(null) }
   const showIssue = (issue: CabinIssue) => { setCabinIssue(issue); setPanel('incidentResult') }
@@ -87,21 +97,21 @@ function App() {
             <p className="lead">Машина подскажет, где её найти, как сесть и где получить помощь.</p>
             <button className="trust-link" onClick={() => setPanel('trust')}>До заказа: узнайте, кто поможет в дороге <span>→</span></button>
             <div className="trust-list">
-              <TrustItem icon="⌁" text="Вы узнаете машину по световому сигналу" />
-              <TrustItem icon="⌕" text="Откроете дверь только своей машины" />
-              <TrustItem icon="◌" text="Помощь доступна в любой момент" />
+              <TrustItem icon="⌁" text="Машина заранее объяснит манёвр" />
+              <TrustItem icon="⌕" text="Своё авто узнаете по номеру и свету" />
+              <TrustItem icon="◌" text="Оператор поможет одним нажатием" />
             </div>
             <button className="button button-primary" onClick={() => setScreen('waiting')}>Заказать поездку</button>
           </ScreenFrame>
         )}
 
         {screen === 'waiting' && (
-          <ScreenFrame step="Машина едет к вам" onHelp={() => setPanel('help')}>
+          <ScreenFrame step="Машина едет к вам" className="waiting-screen" onHelp={() => setPanel('help')}>
             <div className="trip-card"><div><p className="card-label">ПОДАЧА</p><h2>ул. Большая Дмитровка, 1</h2></div><div className="eta">{vehicle.eta}</div></div>
             <div className="route-illustration" aria-hidden="true"><span className="map-dot dot-start"></span><span className="route-line"></span><span className="car-icon">▰</span><span className="map-dot dot-end"></span></div>
-            <div className="info-panel"><p className="eyebrow">КАК ВЫ УЗНАЕТЕ АВТО</p><h2>{vehicle.colour} {vehicle.model}</h2><p>На крыше загорится бирюзовая полоса. Не нужно искать водителя.</p></div>
+            <div className="info-panel"><p className="eyebrow">КАК ВЫ УЗНАЕТЕ АВТО</p><h2>{vehicle.colour} {vehicle.model}</h2><p>На крыше загорится синяя полоса. Не нужно искать водителя.</p></div>
             <button className="button button-primary" onClick={() => setScreen('arrival')}>Машина приехала</button>
-            <div className="delivery-problems"><span>Проблемы с подачей</span><button onClick={() => setScreen('delayed')}>Машина задерживается</button><button onClick={() => setScreen('offline')}>Нет связи</button></div>
+            <button className="delivery-help-button" onClick={() => setPanel('deliveryHelp')}><span aria-hidden="true">?</span><strong>Нужна помощь?</strong><b aria-hidden="true">→</b></button>
             <button className="button button-secondary" onClick={() => setScreen('home')}>Отменить заказ</button>
           </ScreenFrame>
         )}
@@ -142,8 +152,8 @@ function App() {
           <ScreenFrame step="Найдите свою машину" onHelp={() => setPanel('help')}>
             <div className="light-signal" aria-hidden="true"><span></span><span></span><span></span></div>
             <p className="eyebrow">ВАША МАШИНА НА МЕСТЕ</p><h1>{vehicle.colour} {vehicle.model}</h1>
-            <div className="vehicle-card"><div className="car-silhouette" aria-hidden="true">▰</div><div><p>{vehicle.model}</p><strong>{vehicle.plate}</strong></div></div>
-            <p className="lead">Проверьте номер и бирюзовый световой сигнал на крыше.</p>
+            <div className="vehicle-card"><div className="car-silhouette" aria-hidden="true">▰</div><div><p>{vehicle.model}</p><RussianPlate /></div></div>
+            <p className="lead">Проверьте номер и синий световой сигнал на крыше.</p>
             <button className="button button-primary" onClick={() => setScreen('doorOpen')}>Это моя машина</button>
             <button className="text-button" onClick={() => setScreen('wrongCode')}>Не вижу машину</button>
           </ScreenFrame>
@@ -153,7 +163,7 @@ function App() {
           <ScreenFrame step="Проверим ещё раз" onHelp={() => setPanel('help')}>
             <div className="warning-icon" aria-hidden="true">!</div><h1>Машина пока не найдена</h1>
             <p className="lead">Проверьте номер и подойдите к точке подачи. Если машины нет рядом, мы поможем.</p>
-            <div className="info-panel compact"><p className="eyebrow">ВАША МАШИНА</p><h2>{vehicle.colour} {vehicle.model}</h2><strong>{vehicle.plate}</strong></div>
+            <div className="info-panel compact"><p className="eyebrow">ВАША МАШИНА</p><h2>{vehicle.colour} {vehicle.model}</h2><RussianPlate /></div>
             <button className="button button-primary" onClick={() => setScreen('arrival')}>Вернуться к поиску</button>
             <button className="button button-secondary" onClick={() => setPanel('help')}>Связаться с помощью</button>
           </ScreenFrame>
@@ -178,28 +188,34 @@ function App() {
         )}
 
         {screen === 'trip' && (
-          <ScreenFrame step="Вы в пути" onHelp={() => setPanel('help')}>
-            <div className="trip-summary"><div><p className="card-label">МАРШРУТ</p><strong>до {destination}</strong></div><span>12 мин</span></div>
-            <section className="motion-card" aria-live="polite">
-              <div className="motion-icon" aria-hidden="true">{currentEvent.icon}</div>
-              <p className="eyebrow">{currentEvent.label}</p><h2>{currentEvent.title}</h2><p>{currentEvent.text}</p>
-              <div className="reassurance">✓ {currentEvent.reassurance}</div>
-            </section>
-            <button className="explain-button" onClick={() => setPanel('explanations')}>Почему машина так делает? <span>→</span></button>
-            <div className="trip-actions">
-              <button onClick={() => setPanel('plans')}><span>⌁</span>Изменить планы</button>
-              <button onClick={() => setPanel('cabin')}><span>✚</span>Ситуация в салоне</button>
+          <ScreenFrame step="Вы в пути" className="trip-screen" onHelp={() => setPanel('help')}>
+            <div className="trip-map route-illustration" aria-hidden="true"><span className="map-dot dot-start"></span><span className="route-line"></span><span className="car-icon">▰</span><span className="map-dot dot-end"></span>
+              <div className="map-event"><span>{currentEvent.icon}</span><div><b>{currentEvent.label}</b><small>Машина держит ситуацию под контролем</small></div></div>
             </div>
+            <section className="ride-control-panel" aria-live="polite">
+              <div className="trip-summary"><div><p className="card-label">В ПУТИ ДО</p><strong>{destination}</strong></div><span>12 мин</span></div>
+              <div className="route-points"><div><i></i><span>Текущая позиция</span><small>09:42</small></div><div><i></i><span>{destination}</span><small>09:53</small></div></div>
+              <div className="ride-explanation"><div className="motion-icon" aria-hidden="true">{currentEvent.icon}</div><div><p className="eyebrow">{currentEvent.label}</p><h2>{currentEvent.title}</h2><p>{currentEvent.text}</p></div></div>
+              <button className="explain-button" onClick={() => setPanel('explanations')}>Почему машина так делает? <span>→</span></button>
+              <div className="trip-actions trip-actions-compact">
+                <button onClick={() => setPanel('plans')}><span>⌁</span>Маршрут</button>
+                <button onClick={() => setPanel('safeStop')}><span>Ⅱ</span>Остановка</button>
+                <button onClick={() => setPanel('help')}><span>?</span>Помощь</button>
+              </div>
+            </section>
             <button className="button button-primary" onClick={() => setScreen('complete')}>Завершить демо</button>
           </ScreenFrame>
         )}
 
         {screen === 'complete' && (
-          <ScreenFrame step="Рейс завершён">
+          <ScreenFrame step="Рейс завершён" className="complete-screen">
             <div className="hero-mark" aria-hidden="true">✓</div><p className="eyebrow">ВЫ НА МЕСТЕ</p><h1>Спасибо за поездку</h1>
-            <p className="lead">Перед выходом проверьте, пожалуйста, заднее сиденье и багажник.</p>
+            <p className="lead">Перед выходом быстро проверьте, всё ли с вами.</p>
+            <div className="leave-checklist"><p className="card-label">ПРОВЕРЬТЕ ПЕРЕД ВЫХОДОМ</p><div><span>✓</span>Телефон и документы</div><div><span>✓</span>Сумка и покупки</div><div><span>✓</span>Багажник</div></div>
             <div className="trip-card final-card"><span>Поездка завершена</span><strong>{routePrice}</strong></div>
-            <button className="button button-primary" onClick={reset}>Начать заново</button><button className="text-button">Я забыл вещь</button>
+            <button className="button button-primary" onClick={reset}>Всё взял(а), готово</button>
+            <button className="button button-secondary" onClick={() => setPanel('doorReopened')}>Открыть дверь ещё раз</button>
+            <button className="text-button" onClick={() => setPanel('lostItem')}>Я забыл(а) вещь</button>
           </ScreenFrame>
         )}
 
@@ -213,13 +229,49 @@ function App() {
         )}
 
         {panel === 'help' && (
-          <BottomSheet title="Поддержка рядом" onClose={() => setPanel(null)}>
-            <p className="sheet-lead">Выберите подходящий способ помощи — не нужно искать водителя или объяснять, где вы находитесь.</p>
-            <button className="support-option" onClick={() => setPanel('voice')}><span>Голосовой помощник</span><b>→</b></button>
-            <button className="support-option" onClick={() => setPanel('operator')}><span>Оператор на связи</span><b>→</b></button>
-            <button className="support-option" onClick={() => setPanel('fieldStaff')}><span>Сотрудник по звонку</span><b>→</b></button>
-            <button className="support-option" onClick={() => { setPanel(null); setScreen('arrival') }}><span>Не могу найти машину</span><b>→</b></button>
-            <button className="support-option" onClick={() => showIssue('door')}><span>Дверь не открывается</span><b>→</b></button>
+          <BottomSheet title="Чем помочь?" onClose={() => setPanel(null)}>
+            <p className="sheet-lead">Сначала выберите ситуацию. Не нужно решать, кому звонить и как объяснять, что произошло.</p>
+            <div className="action-menu help-scenarios">
+              <button className="action-option" onClick={() => showIssue('unwell')}><span>✚</span><div><strong>Мне плохо</strong><small>Плавно остановимся и подключим человека</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => setPanel('explanations')}><span>i</span><div><strong>Что происходит?</strong><small>Объясним действия машины и маршрут</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => setPanel('cabin')}><span>!</span><div><strong>Проблема с машиной</strong><small>Дверь, предмет в салоне или другая ситуация</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => setPanel('lostItem')}><span>▣</span><div><strong>Я забыл(а) вещь</strong><small>Найдём машину и зарегистрируем заявку</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => { setPanel(null); setScreen('arrival') }}><span>⌕</span><div><strong>Не могу найти машину</strong><small>Ещё раз покажем номер и сигнал</small></div><b>→</b></button>
+            </div>
+            <button className="support-option direct-operator" onClick={() => setPanel('operator')}><span>Нужен оператор прямо сейчас</span><b>→</b></button>
+          </BottomSheet>
+        )}
+
+        {panel === 'deliveryHelp' && (
+          <BottomSheet title="Помощь с подачей" onClose={() => setPanel(null)}>
+            <p className="sheet-lead">Выберите, что произошло. Мы уже знаем адрес подачи и данные автомобиля.</p>
+            <div className="action-menu">
+              <button className="action-option" onClick={() => { setPanel(null); setScreen('delayed') }}><span>◷</span><div><strong>Машина задерживается</strong><small>Покажем новое время и варианты</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => { setPanel(null); setScreen('notArrived') }}><span>!</span><div><strong>Машина не приехала</strong><small>Найдём решение без комиссии</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => { setPanel(null); setScreen('offline') }}><span>⌁</span><div><strong>Нет соединения</strong><small>Сохраним маршрут и подскажем, что делать</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => setPanel('operator')}><span>◉</span><div><strong>Оператор на связи</strong><small>Подключим человека прямо сейчас</small></div><b>→</b></button>
+            </div>
+          </BottomSheet>
+        )}
+
+        {panel === 'lostItem' && (
+          <BottomSheet title="Вернём забытую вещь" onClose={() => setPanel(null)}>
+            <div className="lost-ride"><span aria-hidden="true">✓</span><div><strong>Последняя поездка</strong><small>Белый Hyundai Sonata · А 328 МР · сегодня</small></div></div>
+            <p className="sheet-lead">Что вы оставили в салоне? Передадим заявку в поддержку и проверим машину.</p>
+            <div className="action-menu">
+              <button className="action-option" onClick={() => { setLostItem('Телефон или документы'); setPanel('lostItemSent') }}><span>◌</span><div><strong>Телефон или документы</strong><small>Поможем вернуть в первую очередь</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => { setLostItem('Сумка или рюкзак'); setPanel('lostItemSent') }}><span>▣</span><div><strong>Сумка или рюкзак</strong><small>Проверим салон и багажник</small></div><b>→</b></button>
+              <button className="action-option" onClick={() => { setLostItem('Другая вещь'); setPanel('lostItemSent') }}><span>·</span><div><strong>Другая вещь</strong><small>Опишете её оператору</small></div><b>→</b></button>
+            </div>
+          </BottomSheet>
+        )}
+
+        {panel === 'lostItemSent' && (
+          <BottomSheet title="Заявка принята" onClose={() => setPanel(null)}>
+            <div className="confirmation-icon" aria-hidden="true">✓</div>
+            <p className="sheet-lead">Ищем: <strong>{lostItem}</strong>. Проверим автомобиль и свяжемся с вами, как только вещь найдётся.</p>
+            <div className="lost-status"><span>◉</span><div><strong>Поддержка уже получила заявку</strong><small>Номер рейса и данные автомобиля добавлены автоматически</small></div></div>
+            <button className="button button-primary sheet-button" onClick={() => setPanel('operator')}>Связаться с оператором</button>
           </BottomSheet>
         )}
 
@@ -280,10 +332,27 @@ function App() {
         )}
 
         {panel === 'safeStop' && (
-          <BottomSheet title="Ищем место для остановки" onClose={() => setPanel(null)}>
-            <div className="confirmation-icon" aria-hidden="true">Ⅱ</div>
-            <p className="sheet-lead">Остановимся через 120 м у разрешённой зоны высадки. Не высаживаем пассажиров в опасном месте.</p>
+          <BottomSheet title="Где остановиться?" onClose={() => setPanel(null)}>
+            <p className="sheet-lead">Выберите ближайшую разрешённую точку. Машина не остановится в опасном месте.</p>
+            <div className="action-menu safe-stop-list">
+              {safeStopOptions.map((stop) => <button className="action-option" key={stop.name} onClick={() => { setSelectedSafeStop(stop); setPanel('safeStopConfirmed') }}><span>Ⅱ</span><div><strong>{stop.name}</strong><small>{stop.details} · {stop.note}</small></div><b>→</b></button>)}
+            </div>
+          </BottomSheet>
+        )}
+
+        {panel === 'safeStopConfirmed' && (
+          <BottomSheet title="Остановка подтверждена" onClose={() => setPanel(null)}>
+            <div className="confirmation-icon" aria-hidden="true">✓</div>
+            <p className="sheet-lead">Едем к точке <strong>{selectedSafeStop.name}</strong>. Остановимся через {selectedSafeStop.details.split(' · ')[0]} в разрешённой зоне.</p>
             <button className="button button-primary sheet-button" onClick={() => setPanel(null)}>Понятно</button>
+          </BottomSheet>
+        )}
+
+        {panel === 'doorReopened' && (
+          <BottomSheet title="Дверь открыта ещё раз" onClose={() => setPanel(null)}>
+            <div className="confirmation-icon" aria-hidden="true">✓</div>
+            <p className="sheet-lead">Дверь будет открыта 30 секунд. Заберите вещь и нажмите «Готово», когда будете готовы.</p>
+            <button className="button button-primary sheet-button" onClick={() => setPanel(null)}>Готово</button>
           </BottomSheet>
         )}
 
@@ -310,16 +379,20 @@ function App() {
   )
 }
 
-function ScreenFrame({ children, step, onHelp }: { children: ReactNode; step: string; onHelp?: () => void }) {
-  return <div className="screen"><div className="screen-topline"><span>{step}</span>{onHelp && <button className="help-link" onClick={onHelp}>Помощь</button>}</div><div className="screen-content">{children}</div></div>
+function ScreenFrame({ children, step, onHelp, className = '' }: { children: ReactNode; step: string; onHelp?: () => void; className?: string }) {
+  return <div className={`screen ${className}`}><div className="screen-topline"><span>{step}</span>{onHelp && <button className="help-link" onClick={onHelp}>Помощь</button>}</div><div className="screen-content">{children}</div></div>
 }
 
 function BottomSheet({ children, title, onClose }: { children: ReactNode; title: string; onClose: () => void }) {
-  return <div className="help-sheet" role="dialog" aria-modal="true" aria-label={title}><button className="close-button" onClick={onClose} aria-label="Закрыть">×</button><p className="eyebrow">ПОМОЩНИК В ПОЕЗДКЕ</p><h2>{title}</h2>{children}</div>
+  return <div className="help-sheet" role="dialog" aria-modal="true" aria-label={title}><div className="sheet-grab" aria-hidden="true"></div><button className="close-button" onClick={onClose} aria-label="Закрыть">×</button><p className="eyebrow">ПОМОЩНИК В ПОЕЗДКЕ</p><h2>{title}</h2>{children}</div>
 }
 
 function TrustItem({ icon, text }: { icon: string; text: string }) {
   return <div className="trust-item"><span>{icon}</span><p>{text}</p></div>
+}
+
+function RussianPlate() {
+  return <div className="russian-plate" aria-label={`Номер ${vehicle.plate}, регион ${vehicle.region}`}><span>{vehicle.plate}</span><b>{vehicle.region}</b><small>RUS</small></div>
 }
 
 export default App
