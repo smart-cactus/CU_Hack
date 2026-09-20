@@ -96,6 +96,14 @@ h2 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -.025em; }
 .info-panel h2 { margin-bottom: 8px; }
 .info-panel p:last-child { margin: 0; color: #68727f; font-size: 14px; line-height: 1.35; }
 .compact { margin: 28px 0; }
+.connection-status, .seatbelt-check { display: flex; align-items: center; gap: 11px; padding: 13px; border-radius: 15px; background: #eaf2ff; }
+.connection-status { margin-top: 18px; }
+.connection-status > span, .seatbelt-check > span { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 11px; color: #146ef5; background: #fff; font-size: 17px; font-weight: 850; }
+.connection-status div, .seatbelt-check div { display: grid; gap: 3px; }
+.connection-status strong, .seatbelt-check strong { font-size: 13px; }
+.connection-status small, .seatbelt-check small { color: #68727f; font-size: 11px; line-height: 1.2; }
+.seatbelt-check { margin: 0 0 8px; background: #f5f9ff; border: 1px solid #dbe7fb; }
+.seatbelt-check > span { color: #fff; background: #146ef5; }
 
 .route-illustration { position: relative; height: 230px; margin: 18px -22px 0; overflow: hidden; background: #e6eaed; }
 .route-illustration::before, .route-illustration::after { content: ""; position: absolute; width: 160%; height: 38px; background: rgba(255,255,255,.94); transform: rotate(-18deg); }
@@ -194,6 +202,7 @@ h2 { margin: 0; font-size: 20px; line-height: 1.2; letter-spacing: -.025em; }
 .support-option { width: 100%; display: flex; justify-content: space-between; padding: 17px 0; border: 0; border-top: 1px solid #e6e9ee; color: #111318; background: #fff; text-align: left; font-weight: 750; }.support-option b { color: #146ef5; font-size: 20px; }
 .direct-operator { margin-top: 16px; padding: 13px 14px; border: 1px solid #dbe7fb; border-radius: 13px; color: #146ef5; background: #f5f9ff; }
 .help-scenarios .action-option { min-height: 58px; }
+.feedback-option { padding: 16px 0; }
 .event-option, .plan-option { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 0; border: 0; border-top: 1px solid #e6e9ee; color: #111318; background: #fff; text-align: left; }
 .event-option > span, .plan-option > span { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 11px; color: #111318; background: #fff3b0; font-weight: 850; }
 .event-option div, .plan-option div { display: grid; gap: 3px; flex: 1; }.event-option strong, .plan-option strong { font-size: 14px; }.event-option small, .plan-option small { color: #7b8491; font-size: 12px; line-height: 1.2; }.event-option b { color: #146ef5; font-size: 18px; }

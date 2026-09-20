@@ -4,7 +4,7 @@ type Screen = 'home' | 'waiting' | 'delayed' | 'notArrived' | 'offline' | 'arriv
 type DriveEvent = 'stop' | 'detour' | 'offRoute' | 'waiting'
 type CabinIssue = 'unwell' | 'door' | 'object'
 type LostItem = 'Телефон или документы' | 'Сумка или рюкзак' | 'Другая вещь'
-type Panel = 'trust' | 'help' | 'deliveryHelp' | 'lostItem' | 'lostItemSent' | 'voice' | 'operator' | 'fieldStaff' | 'explanations' | 'plans' | 'routeChanged' | 'safeStop' | 'safeStopConfirmed' | 'doorReopened' | 'cabin' | 'incidentResult'
+type Panel = 'trust' | 'help' | 'deliveryHelp' | 'lostItem' | 'lostItemSent' | 'voice' | 'operator' | 'fieldStaff' | 'explanations' | 'plans' | 'routeChanged' | 'safeStop' | 'safeStopConfirmed' | 'doorReopened' | 'feedback' | 'cabin' | 'incidentResult'
 
 const vehicle = { model: 'Hyundai Sonata', plate: 'А 328 МР', region: '116', colour: 'Белый', eta: '3 мин' }
 const safeStopOptions = [
@@ -66,6 +66,7 @@ function App() {
   const [fieldStaffRequested, setFieldStaffRequested] = useState(false)
   const [lostItem, setLostItem] = useState<LostItem>('Телефон или документы')
   const [selectedSafeStop, setSelectedSafeStop] = useState(safeStopOptions[0])
+  const [feedback, setFeedback] = useState<'clear' | 'unclear' | null>(null)
 
   const reset = () => {
     setPanel(null)
@@ -78,6 +79,7 @@ function App() {
     setFieldStaffRequested(false)
     setLostItem('Телефон или документы')
     setSelectedSafeStop(safeStopOptions[0])
+    setFeedback(null)
   }
   const chooseEvent = (event: DriveEvent) => { setDriveEvent(event); setPanel(null) }
   const showIssue = (issue: CabinIssue) => { setCabinIssue(issue); setPanel('incidentResult') }
@@ -142,6 +144,7 @@ function App() {
           <ScreenFrame step="Подключение" onHelp={() => setPanel('operator')}>
             <div className="offline-icon" aria-hidden="true">⌁</div><p className="eyebrow">НЕТ СОЕДИНЕНИЯ</p><h1>Сохранили всё важное</h1>
             <p className="lead">Последние данные о машине и маршруте останутся на экране. Мы повторим подключение автоматически.</p>
+            <div className="connection-status"><span aria-hidden="true">⌁</span><div><strong>Пытаемся восстановить связь</strong><small>Последняя проверка — только что</small></div></div>
             <div className="info-panel compact"><p className="eyebrow">ЕСЛИ НУЖНА ПОМОЩЬ СЕЙЧАС</p><h2>Позвоните оператору</h2><p>Звонок доступен через сотовую сеть, даже если интернет не работает.</p></div>
             <button className="button button-primary" onClick={() => setPanel('operator')}>Позвонить оператору</button>
             <button className="button button-secondary" onClick={() => setScreen('waiting')}>Повторить подключение</button>
@@ -181,9 +184,11 @@ function App() {
         {screen === 'inside' && (
           <ScreenFrame step="Вы в салоне" onHelp={() => setPanel('help')}>
             <div className="success-icon" aria-hidden="true">✓</div><p className="eyebrow">ВСЁ ГОТОВО</p><h1>Поехали</h1>
-            <p className="lead">Во время поездки мы объясним остановки и изменения маршрута до того, как они вызовут тревогу.</p>
+            <p className="lead">Перед стартом пристегните ремень. Во время поездки объясним остановки и изменения маршрута заранее.</p>
             <div className="info-panel compact"><p className="eyebrow">МАРШРУТ</p><h2>до {destination}</h2><p>12 минут · {routePrice}</p></div>
-            <button className="button button-primary" onClick={() => setScreen('trip')}>Начать поездку</button>
+            <div className="seatbelt-check"><span aria-hidden="true">✓</span><div><strong>Ремень пристёгнут?</strong><small>Поездка начнётся после подтверждения.</small></div></div>
+            <button className="button button-primary" onClick={() => setScreen('trip')}>Ремень пристёгнут, поехали</button>
+            <button className="text-button" onClick={() => setPanel('voice')}>Нужна помощь с посадкой</button>
           </ScreenFrame>
         )}
 
@@ -213,7 +218,7 @@ function App() {
             <p className="lead">Перед выходом быстро проверьте, всё ли с вами.</p>
             <div className="leave-checklist"><p className="card-label">ПРОВЕРЬТЕ ПЕРЕД ВЫХОДОМ</p><div><span>✓</span>Телефон и документы</div><div><span>✓</span>Сумка и покупки</div><div><span>✓</span>Багажник</div></div>
             <div className="trip-card final-card"><span>Поездка завершена</span><strong>{routePrice}</strong></div>
-            <button className="button button-primary" onClick={reset}>Всё взял(а), готово</button>
+            <button className="button button-primary" onClick={() => setPanel('feedback')}>Всё взял(а), готово</button>
             <button className="button button-secondary" onClick={() => setPanel('doorReopened')}>Открыть дверь ещё раз</button>
             <button className="text-button" onClick={() => setPanel('lostItem')}>Я забыл(а) вещь</button>
           </ScreenFrame>
@@ -344,7 +349,7 @@ function App() {
           <BottomSheet title="Остановка подтверждена" onClose={() => setPanel(null)}>
             <div className="confirmation-icon" aria-hidden="true">✓</div>
             <p className="sheet-lead">Едем к точке <strong>{selectedSafeStop.name}</strong>. Остановимся через {selectedSafeStop.details.split(' · ')[0]} в разрешённой зоне.</p>
-            <button className="button button-primary sheet-button" onClick={() => setPanel(null)}>Понятно</button>
+            <button className="button button-primary sheet-button" onClick={() => setPanel(null)}>Остановиться через {selectedSafeStop.details.split(' · ')[0]}</button>
           </BottomSheet>
         )}
 
@@ -353,6 +358,12 @@ function App() {
             <div className="confirmation-icon" aria-hidden="true">✓</div>
             <p className="sheet-lead">Дверь будет открыта 30 секунд. Заберите вещь и нажмите «Готово», когда будете готовы.</p>
             <button className="button button-primary sheet-button" onClick={() => setPanel(null)}>Готово</button>
+          </BottomSheet>
+        )}
+
+        {panel === 'feedback' && (
+          <BottomSheet title={feedback ? 'Спасибо за ответ' : 'Как прошла поездка?'} onClose={() => { setFeedback(null); setPanel(null) }}>
+            {feedback ? <><div className="confirmation-icon" aria-hidden="true">✓</div><p className="sheet-lead">{feedback === 'clear' ? 'Отлично — рады, что действия машины были понятными.' : 'Спасибо. Это поможет сделать объяснения машины спокойнее и понятнее.'}</p><button className="button button-primary sheet-button" onClick={reset}>Завершить</button></> : <><p className="sheet-lead">Был ли момент, когда было непонятно, что делает машина?</p><button className="plan-option feedback-option" onClick={() => setFeedback('clear')}><span>✓</span><div><strong>Нет, всё было понятно</strong><small>Спасибо, что доверили нам поездку</small></div></button><button className="plan-option feedback-option" onClick={() => setFeedback('unclear')}><span>?</span><div><strong>Да, был непонятный момент</strong><small>Учтём это в следующих объяснениях</small></div></button></>}
           </BottomSheet>
         )}
 
